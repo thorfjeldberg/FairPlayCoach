@@ -1,4 +1,3 @@
-import React from 'react';
 import { useFairPlay } from './logic/useFairPlay';
 import { SetupView } from './components/SetupView';
 import { MatchView } from './components/MatchView';
@@ -17,7 +16,6 @@ function App() {
     setPlayerStatus,
     addGoal,
     addOpponentGoal,
-    getSubstitutionSuggestion,
     performSubstitution,
     suggestedInterval
   } = useFairPlay();

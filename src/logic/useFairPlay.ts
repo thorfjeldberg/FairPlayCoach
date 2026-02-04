@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Player, MatchSettings, MatchState, SubstitutionProposal } from './types';
+import type { Player, MatchSettings, MatchState } from './types';
 import { calculateFairInterval, getSubstitutionSuggestion } from './fairPlayLogic';
 
 const STORAGE_KEY = 'fair_play_coach_state';
@@ -66,7 +66,7 @@ export function useFairPlay() {
     // Auto-suggest interval when roster/settings change (only in Setup)
     useEffect(() => {
         if (state.match.status === 'IDLE') {
-            const { matchDuration, playersOnField } = state.settings;
+            const { playersOnField } = state.settings;
             const rosterSize = state.players.length;
 
             if (rosterSize > playersOnField) {
