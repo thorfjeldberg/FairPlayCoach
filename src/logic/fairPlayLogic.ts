@@ -1,4 +1,4 @@
-import { Player } from './types';
+import type { Player } from './types';
 
 export const calculateFairInterval = (rosterSize: number, fieldSize: number, duration: number): number => {
     if (rosterSize <= fieldSize) return duration; // No subs needed, play full match

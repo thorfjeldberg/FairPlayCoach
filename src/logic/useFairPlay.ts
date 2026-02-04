@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Player, MatchSettings, MatchState, SubstitutionProposal } from './types';
+import { calculateFairInterval, getSubstitutionSuggestion } from './fairPlayLogic';
 
 const STORAGE_KEY = 'fair_play_coach_state';
 
@@ -48,9 +49,18 @@ export function useFairPlay() {
 
     const timerRef = useRef<number | null>(null);
 
-    // Persistence
+    // Persistence with throttling for frequent updates (timer ticks)
+    const lastSavedRef = useRef(0);
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const now = Date.now();
+        const isCritical = state.match.status !== 'RUNNING' || state.match.subs.length > 0;
+
+        // Save immediately if critical (stopped, paused, substitution, goal)
+        // Or if it's been more than 10 seconds since last save
+        if (isCritical || (now - lastSavedRef.current > 10000)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            lastSavedRef.current = now;
+        }
     }, [state]);
 
     // Auto-suggest interval when roster/settings change (only in Setup)
@@ -233,12 +243,9 @@ export function useFairPlay() {
         }));
     }, []);
 
-    const getSubstitutionSuggestion = useCallback(() => {
-        const { players } = state;
-        const onField = players.filter(p => p.status === 'ON_FIELD').sort((a, b) => b.totalPlayTime - a.totalPlayTime);
-        const onBench = players.filter(p => p.status === 'BENCH').sort((a, b) => a.lastSubTime - b.lastSubTime);
-        return { onField, onBench };
-    }, [state]);
+    const getSubstitutionSuggestionLocal = useCallback(() => {
+        return getSubstitutionSuggestion(state.players);
+    }, [state.players]);
 
     const performSubstitution = useCallback((outIds: string[], inIds: string[]) => {
         setState(prev => {
@@ -260,20 +267,6 @@ export function useFairPlay() {
             };
         });
     }, []);
-
-    // Calculate suggested interval (internal helper, not state-driving directly unless via effect)
-    const calculateFairInterval = (rosterSize: number, fieldSize: number, duration: number) => {
-        if (rosterSize <= fieldSize) return duration; // No subs needed, play full match
-
-        // GCD-based Fair Play Algorithm
-        const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-        const cycleSteps = rosterSize / gcd(rosterSize, fieldSize);
-        let interval = duration / cycleSteps;
-
-        if (interval > 12) interval /= 2;
-
-        return Number(interval.toFixed(1)); // Round to 0.1 (6 seconds)
-    };
 
     const suggestedInterval = calculateFairInterval(
         state.players.length,
@@ -309,7 +302,7 @@ export function useFairPlay() {
         setPlayerStatus,
         addGoal,
         addOpponentGoal,
-        getSubstitutionSuggestion,
+        getSubstitutionSuggestion: getSubstitutionSuggestionLocal,
         performSubstitution,
         suggestedInterval
     };
