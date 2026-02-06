@@ -18,6 +18,7 @@ const INITIAL_STATE: FairPlayState = {
         matchDuration: 40, // default 2x20
         playersOnField: 5,
         subInterval: 5,
+        notificationsEnabled: true,
     },
     match: {
         status: 'IDLE',
@@ -140,23 +141,10 @@ export function useFairPlay() {
                         lastTickTimestamp: now
                     };
 
-                    // Check for notification (30 seconds before sub)
+                    // Check for notification trigger (30 seconds before sub)
                     const timeToSub = prev.match.nextSubTime - nextTime;
-                    if (timeToSub <= 30 && timeToSub > 0 && !prev.match.notificationSent) {
-                        const { onField, onBench } = getSubstitutionSuggestion(prev.players);
-
-                        // Heuristic: Suggest swapping based on bench size or typical rotation
-                        const numToSwap = Math.max(1, Math.min(onBench.length, onField.length));
-                        const playersOut = onField.slice(0, numToSwap).map(p => p.name).join(', ');
-                        const playersIn = onBench.slice(0, numToSwap).map(p => p.name).join(', ');
-
-                        if (playersOut && playersIn) {
-                            sendNotification(
-                                'Time for substitution! ⚽️',
-                                `Swap in 30s: OUT: ${playersOut} | IN: ${playersIn}`
-                            );
-                            nextMatch.notificationSent = true;
-                        }
+                    if (prev.settings.notificationsEnabled && timeToSub <= 30 && timeToSub > 0 && !prev.match.notificationSent) {
+                        nextMatch.notificationSent = true;
                     }
 
                     return {
@@ -173,6 +161,26 @@ export function useFairPlay() {
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, [state.match.status]);
+
+    // Notification Effect
+    useEffect(() => {
+        const timeToSub = state.match.nextSubTime - state.match.timeElapsed;
+        const isWarmupPhase = timeToSub <= 30 && timeToSub > 0;
+
+        if (state.settings.notificationsEnabled && state.match.notificationSent && isWarmupPhase) {
+            const { onField, onBench } = getSubstitutionSuggestion(state.players);
+            const numToSwap = Math.max(1, Math.min(onBench.length, onField.length));
+            const playersOut = onField.slice(0, numToSwap).map(p => p.name).join(', ');
+            const playersIn = onBench.slice(0, numToSwap).map(p => p.name).join(', ');
+
+            if (playersOut && playersIn) {
+                sendNotification(
+                    'Time for substitution! ⚽️',
+                    `Swap in 30s: OUT: ${playersOut} | IN: ${playersIn}`
+                );
+            }
+        }
+    }, [state.match.notificationSent, state.match.nextSubTime, state.settings.notificationsEnabled]);
 
     const addPlayer = useCallback((name: string) => {
         setState(prev => ({

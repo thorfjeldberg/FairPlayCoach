@@ -12,6 +12,7 @@ export interface MatchSettings {
     matchDuration: number; // in minutes
     playersOnField: number;
     subInterval: number; // in minutes, calculated or manual
+    notificationsEnabled: boolean;
 }
 
 export interface MatchState {

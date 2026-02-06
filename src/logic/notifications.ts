@@ -16,18 +16,38 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
     return false;
 };
 
-export const sendNotification = (title: string, body: string) => {
-    if (Notification.permission === 'granted') {
-        new Notification(title, {
+export const sendNotification = async (title: string, body: string) => {
+    try {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+            return;
+        }
+
+        const options = {
             body,
             icon: '/pwa-192x192.png',
             badge: '/pwa-192x192.png',
-        });
+            vibrate: [200, 100, 200],
+            tag: 'substitution-alert',
+            renotify: true
+        } as any;
 
-        // Vibration for mobile if available
+        // Try using Service Worker registration (safest for mobile PWAs)
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration && 'showNotification' in registration) {
+                await registration.showNotification(title, options);
+                return;
+            }
+        }
+
+        // Fallback to basic Notification constructor
+        new Notification(title, options);
+
         if ('vibrate' in navigator) {
             navigator.vibrate([200, 100, 200]);
         }
+    } catch (error) {
+        console.error('Failed to send notification:', error);
     }
 };
 

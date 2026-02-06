@@ -108,9 +108,13 @@ export function SetupView({
                         <div className="flex justify-between items-center">
                             <label className="text-xs uppercase tracking-wider font-bold text-slate-500">Notifications</label>
                             {notifPermission === 'granted' ? (
-                                <span className="text-xs text-green-400 font-bold flex items-center gap-1">
-                                    <Bell className="w-3 h-3" /> Enabled
-                                </span>
+                                <button
+                                    onClick={() => onUpdateSettings({ notificationsEnabled: !settings.notificationsEnabled })}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${settings.notificationsEnabled ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}
+                                >
+                                    {settings.notificationsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                    <span className="text-xs font-bold">{settings.notificationsEnabled ? 'Active' : 'Muted'}</span>
+                                </button>
                             ) : (
                                 <button
                                     onClick={handleEnableNotifications}
