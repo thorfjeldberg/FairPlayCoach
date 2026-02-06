@@ -149,14 +149,22 @@ export function MatchView({
                                     }
                                 }}
                                 disabled={onField.length >= settings.playersOnField}
-                                className={`glass bg-slate-800/40 p-3 rounded-xl flex justify-between items-center group transition-all text-left relative overflow-hidden ${onField.length >= settings.playersOnField ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                                className={`glass p-3 rounded-xl flex justify-between items-center group transition-all text-left relative overflow-hidden ${i === 0 ? 'bg-green-950/20 ring-1 ring-green-500/30' : 'bg-slate-800/40'} ${onField.length >= settings.playersOnField ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
                             >
                                 {i === 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500" />}
                                 <div className="min-w-0">
-                                    <span className="font-bold block text-slate-300 truncate group-hover:text-white transition-colors">{p.name}</span>
-                                    <span className="text-xs text-slate-500 font-mono">
-                                        Rest: {timeDisplay(match.timeElapsed - p.lastSubTime)}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`font-bold block truncate transition-colors ${i === 0 ? 'text-green-400 group-hover:text-green-300' : 'text-slate-300 group-hover:text-white'}`}>{p.name}</span>
+                                        {i === 0 && <span className="bg-green-500 text-[10px] text-black font-black px-1 rounded animate-pulse">NEXT</span>}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-xs text-slate-500 font-mono truncate">
+                                            Rest: {timeDisplay(match.timeElapsed - p.lastSubTime)}
+                                        </span>
+                                        <span className="text-xs text-orange-400/70 font-mono shrink-0">
+                                            {(p.totalPlayTime / 60).toFixed(0)}m
+                                        </span>
+                                    </div>
                                 </div>
                                 <UserPlus className={`w-5 h-5 transition-colors shrink-0 ${onField.length >= settings.playersOnField ? 'text-slate-700' : 'text-slate-600 group-hover:text-green-400'}`} />
                             </button>
