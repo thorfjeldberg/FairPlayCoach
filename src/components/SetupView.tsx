@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Plus, Users, Clock, Play, Trash2, UserCheck, UserMinus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Users, Clock, Play, Trash2, UserCheck, UserMinus, Bell, BellOff } from 'lucide-react';
 import type { MatchSettings, Player } from '../logic/types';
+import { requestNotificationPermission, checkNotificationPermission } from '../logic/notifications';
 
 interface SetupViewProps {
     players: Player[];
@@ -18,12 +19,16 @@ export function SetupView({
     onAddPlayer, onRemovePlayer, onUpdateSettings, onStartMatch, onSetStatus
 }: SetupViewProps) {
     const [newName, setNewName] = useState('');
+    const [notifPermission, setNotifPermission] = useState<NotificationPermission>(checkNotificationPermission());
 
-    // Auto-fill suggested interval if the user hasn't heavily customized it?
-    // Let's just use it as a guideline or auto-set it when roster/settings change.
-    // Actually, better to just let the parent hook Update it, OR show it as "Recommended".
-    // Let's autofill it on load if it's suspicious? No, explicit is better.
-    // Let's just show a "Use Recommended" button.
+    useEffect(() => {
+        setNotifPermission(checkNotificationPermission());
+    }, []);
+
+    const handleEnableNotifications = async () => {
+        const granted = await requestNotificationPermission();
+        setNotifPermission(granted ? 'granted' : 'denied');
+    };
 
     const startersCount = players.filter(p => p.status === 'ON_FIELD').length;
     const isRosterValid = startersCount === settings.playersOnField;
@@ -96,6 +101,24 @@ export function SetupView({
                                 className="input-field pr-12 font-mono text-2xl font-bold text-white text-center"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">MIN</span>
+                        </div>
+                    </div>
+
+                    <div className="col-span-2 pt-2 border-t border-slate-800">
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs uppercase tracking-wider font-bold text-slate-500">Notifications</label>
+                            {notifPermission === 'granted' ? (
+                                <span className="text-xs text-green-400 font-bold flex items-center gap-1">
+                                    <Bell className="w-3 h-3" /> Enabled
+                                </span>
+                            ) : (
+                                <button
+                                    onClick={handleEnableNotifications}
+                                    className="text-xs text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 underline underline-offset-2"
+                                >
+                                    <BellOff className="w-3 h-3" /> Enable for swaps
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

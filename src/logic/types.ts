@@ -21,6 +21,7 @@ export interface MatchState {
     opponentScore: number;
     lastTickTimestamp?: number; // For diff calculation
     subs: SubstitutionProposal[];
+    notificationSent?: boolean;
 }
 
 export interface SubstitutionProposal {

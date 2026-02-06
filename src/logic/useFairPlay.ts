@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Player, MatchSettings, MatchState } from './types';
 import { calculateFairInterval, getSubstitutionSuggestion } from './fairPlayLogic';
+import { sendNotification } from './notifications';
 
 const STORAGE_KEY = 'fair_play_coach_state';
 
@@ -139,6 +140,25 @@ export function useFairPlay() {
                         lastTickTimestamp: now
                     };
 
+                    // Check for notification (30 seconds before sub)
+                    const timeToSub = prev.match.nextSubTime - nextTime;
+                    if (timeToSub <= 30 && timeToSub > 0 && !prev.match.notificationSent) {
+                        const { onField, onBench } = getSubstitutionSuggestion(prev.players);
+
+                        // Heuristic: Suggest swapping based on bench size or typical rotation
+                        const numToSwap = Math.max(1, Math.min(onBench.length, onField.length));
+                        const playersOut = onField.slice(0, numToSwap).map(p => p.name).join(', ');
+                        const playersIn = onBench.slice(0, numToSwap).map(p => p.name).join(', ');
+
+                        if (playersOut && playersIn) {
+                            sendNotification(
+                                'Time for substitution! ⚽️',
+                                `Swap in 30s: OUT: ${playersOut} | IN: ${playersIn}`
+                            );
+                            nextMatch.notificationSent = true;
+                        }
+                    }
+
                     return {
                         ...prev,
                         players: nextPlayers,
@@ -262,6 +282,7 @@ export function useFairPlay() {
                     ...prev.match,
                     subs: [],
                     nextSubTime: prev.match.timeElapsed + (prev.settings.subInterval * 60),
+                    notificationSent: false,
                     lastTickTimestamp: Date.now() // Reset tick to avoid double counting if state updates overlap
                 }
             };
