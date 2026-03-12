@@ -176,7 +176,7 @@ export function useFairPlay() {
             if (playersOut && playersIn) {
                 sendNotification(
                     'Time for substitution! ⚽️',
-                    `Swap in 30s: OUT: ${playersOut} | IN: ${playersIn}`
+                    `OUT: ${playersOut} | IN: ${playersIn}`
                 );
             }
         }
