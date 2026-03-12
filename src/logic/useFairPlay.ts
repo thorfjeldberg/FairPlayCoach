@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import ReactGA from "react-ga4";
 import type { Player, MatchSettings, MatchState } from './types';
 import { calculateFairInterval, getSubstitutionSuggestion } from './fairPlayLogic';
 import { sendNotification } from './notifications';
@@ -196,6 +197,10 @@ export function useFairPlay() {
                 }
             ]
         }));
+        ReactGA.event({
+            category: "Player",
+            action: "add_player",
+        });
     }, []);
 
     const removePlayer = useCallback((id: string) => {
@@ -203,6 +208,10 @@ export function useFairPlay() {
             ...prev,
             players: prev.players.filter(p => p.id !== id)
         }));
+        ReactGA.event({
+            category: "Player",
+            action: "remove_player",
+        });
     }, []);
 
     const updateSettings = useCallback((newSettings: Partial<MatchSettings>) => {
@@ -210,6 +219,10 @@ export function useFairPlay() {
             ...prev,
             settings: { ...prev.settings, ...newSettings }
         }));
+        ReactGA.event({
+            category: "Settings",
+            action: "update_settings",
+        });
     }, []);
 
     const startMatch = useCallback(() => {
@@ -225,6 +238,10 @@ export function useFairPlay() {
                 }
             };
         });
+        ReactGA.event({
+            category: "Match",
+            action: "start_match",
+        });
     }, []);
 
     const pauseMatch = useCallback(() => {
@@ -232,6 +249,10 @@ export function useFairPlay() {
             ...prev,
             match: { ...prev.match, status: 'PAUSED', lastTickTimestamp: undefined }
         }));
+        ReactGA.event({
+            category: "Match",
+            action: "pause_match",
+        });
     }, []);
 
     const resetMatch = useCallback(() => {
@@ -241,6 +262,10 @@ export function useFairPlay() {
             goals: [],
             players: prev.players.map(p => ({ ...p, totalPlayTime: 0, lastSubTime: 0, status: 'BENCH' }))
         }));
+        ReactGA.event({
+            category: "Match",
+            action: "reset_match",
+        });
     }, []);
 
     const finishMatch = useCallback(() => {
@@ -248,6 +273,10 @@ export function useFairPlay() {
             ...prev,
             match: { ...prev.match, status: 'FINISHED' }
         }));
+        ReactGA.event({
+            category: "Match",
+            action: "finish_match",
+        });
     }, []);
 
     const setPlayerStatus = useCallback((id: string, status: 'ON_FIELD' | 'BENCH') => {
@@ -262,6 +291,10 @@ export function useFairPlay() {
             ...prev,
             goals: [...prev.goals, { playerId, time: prev.match.timeElapsed }]
         }));
+        ReactGA.event({
+            category: "Match",
+            action: "add_goal",
+        });
     }, []);
 
     const addOpponentGoal = useCallback(() => {
@@ -269,6 +302,10 @@ export function useFairPlay() {
             ...prev,
             match: { ...prev.match, opponentScore: (prev.match.opponentScore || 0) + 1 }
         }));
+        ReactGA.event({
+            category: "Match",
+            action: "add_opponent_goal",
+        });
     }, []);
 
     const getSubstitutionSuggestionLocal = useCallback(() => {
@@ -294,6 +331,10 @@ export function useFairPlay() {
                     lastTickTimestamp: Date.now() // Reset tick to avoid double counting if state updates overlap
                 }
             };
+        });
+        ReactGA.event({
+            category: "Match",
+            action: "perform_substitution",
         });
     }, []);
 
