@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pause, Play, UserMinus, UserPlus, StopCircle, ArrowRightLeft, Shield, Swords } from 'lucide-react';
+import { Pause, Play, StopCircle, ArrowRightLeft, Shield, Swords } from 'lucide-react';
 import type { MatchState, Player, MatchSettings } from '../logic/types';
 
 interface MatchViewProps {
@@ -36,10 +36,11 @@ export function MatchView({
     const isSubWarning = timeToSub <= 30 && timeToSub > 0;
     const isSubDue = timeToSub <= 0;
 
-    const onField = players.filter(p => p.status === 'ON_FIELD');
+    const onField = players.filter(p => p.status === 'ON_FIELD').sort((a, b) => b.totalPlayTime - a.totalPlayTime);
     const onBench = players.filter(p => p.status === 'BENCH').sort((a, b) => a.lastSubTime - b.lastSubTime);
 
-    const numToSwap = Math.max(1, Math.min(onBench.length, onField.length));
+    // Swap 2 if bench is 3+, otherwise 1. Max limited by bench and field size.
+    const numToSwap = Math.min(onBench.length >= 3 ? 2 : 1, onField.length, Math.max(1, onBench.length));
 
     const handleSubAction = () => {
         const candidatesOut = [...onField].sort((a, b) => b.totalPlayTime - a.totalPlayTime).slice(0, numToSwap);
@@ -112,22 +113,36 @@ export function MatchView({
                         <span className="text-xs text-slate-500">Tap to sub out</span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {onField.map(p => (
-                            <button
-                                key={p.id}
-                                onClick={() => onManualSub(p.id, 'BENCH')}
-                                className="glass bg-green-900/10 border-green-500/20 p-3 rounded-xl flex justify-between items-center group active:scale-95 transition-all text-left"
-                            >
-                                <div className="min-w-0">
-                                    <span className="font-bold block text-white truncate group-hover:text-green-300 transition-colors">{p.name}</span>
-                                    <span className="text-xs text-green-400/70 font-mono">
-                                        {(p.totalPlayTime / 60).toFixed(0)}m
-                                    </span>
-                                </div>
-                                <UserMinus className="w-5 h-5 text-green-500/30 group-hover:text-red-400 transition-colors shrink-0" />
-                            </button>
-                        ))}
+                    <div className="flex flex-col gap-3">
+                        {onField.map((p, i) => {
+                            const isNextOut = i < numToSwap;
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => onManualSub(p.id, 'BENCH')}
+                                    className={`glass p-3 rounded-xl flex items-center gap-3 group active:scale-95 transition-all text-left relative overflow-hidden ${isNextOut ? 'bg-red-950/20 ring-1 ring-red-500/30' : 'bg-green-900/10 border-green-500/20'}`}
+                                >
+                                    {isNextOut && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />}
+                                    
+                                    {/* Left Side: Name & Badges */}
+                                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xl font-bold block truncate transition-colors ${isNextOut ? 'text-red-400 group-hover:text-red-300' : 'text-white group-hover:text-green-300'}`}>
+                                                {p.name}
+                                            </span>
+                                            {isNextOut && <span className="bg-red-500 text-xs text-black font-black px-2 py-0.5 rounded shrink-0">OUT {i + 1}</span>}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Right Side: Time */}
+                                    <div className="shrink-0 text-center bg-black/20 rounded-lg py-1 px-3 border border-green-500/10">
+                                        <div className="text-xl font-mono font-bold text-green-400">
+                                            {timeDisplay(p.totalPlayTime)}
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -139,36 +154,44 @@ export function MatchView({
                         </h3>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {onBench.map((p, i) => (
-                            <button
-                                key={p.id}
-                                onClick={() => {
-                                    if (onField.length < settings.playersOnField) {
-                                        onManualSub(p.id, 'ON_FIELD');
-                                    }
-                                }}
-                                disabled={onField.length >= settings.playersOnField}
-                                className={`glass p-3 rounded-xl flex justify-between items-center group transition-all text-left relative overflow-hidden ${i === 0 ? 'bg-green-950/20 ring-1 ring-green-500/30' : 'bg-slate-800/40'} ${onField.length >= settings.playersOnField ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
-                            >
-                                {i === 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500" />}
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`font-bold block truncate transition-colors ${i === 0 ? 'text-green-400 group-hover:text-green-300' : 'text-slate-300 group-hover:text-white'}`}>{p.name}</span>
-                                        {i === 0 && <span className="bg-green-500 text-[10px] text-black font-black px-1 rounded animate-pulse">NEXT</span>}
+                    <div className="flex flex-col gap-3">
+                        {onBench.map((p, i) => {
+                            const isNextIn = i < numToSwap;
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => {
+                                        if (onField.length < settings.playersOnField) {
+                                            onManualSub(p.id, 'ON_FIELD');
+                                        }
+                                    }}
+                                    disabled={onField.length >= settings.playersOnField}
+                                    className={`glass p-3 rounded-xl flex items-center gap-3 group transition-all text-left relative overflow-hidden ${isNextIn ? 'bg-green-900/40 ring-1 ring-green-400/50' : 'bg-slate-800'} ${onField.length >= settings.playersOnField ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                                >
+                                    {isNextIn && <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500" />}
+                                    
+                                    {/* Left Side: Name & Badges */}
+                                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xl font-bold block truncate transition-colors ${isNextIn ? 'text-green-300 group-hover:text-green-200' : 'text-slate-100 group-hover:text-white'}`}>
+                                                {p.name}
+                                            </span>
+                                            {isNextIn && <span className="bg-green-500 text-xs text-black font-black px-2 py-0.5 rounded animate-pulse shrink-0">IN {i + 1}</span>}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs text-slate-500 font-mono truncate">
-                                            Rest: {timeDisplay(match.timeElapsed - p.lastSubTime)}
-                                        </span>
-                                        <span className="text-xs text-orange-400/70 font-mono shrink-0">
-                                            {(p.totalPlayTime / 60).toFixed(0)}m
-                                        </span>
+                                    
+                                    {/* Right Side: Stats */}
+                                    <div className="shrink-0 flex flex-col items-center bg-black/20 rounded-lg py-1 px-3 border border-slate-700/50">
+                                        <div className="text-lg font-mono font-bold text-slate-200">
+                                            {timeDisplay(match.timeElapsed - p.lastSubTime)}
+                                        </div>
+                                        <div className="text-[10px] text-orange-300 font-mono font-bold uppercase tracking-wider">
+                                            {timeDisplay(p.totalPlayTime)} play
+                                        </div>
                                     </div>
-                                </div>
-                                <UserPlus className={`w-5 h-5 transition-colors shrink-0 ${onField.length >= settings.playersOnField ? 'text-slate-700' : 'text-slate-600 group-hover:text-green-400'}`} />
-                            </button>
-                        ))}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

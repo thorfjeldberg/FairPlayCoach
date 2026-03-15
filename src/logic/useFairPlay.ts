@@ -170,7 +170,7 @@ export function useFairPlay() {
 
         if (state.settings.notificationsEnabled && state.match.notificationSent && isWarmupPhase) {
             const { onField, onBench } = getSubstitutionSuggestion(state.players);
-            const numToSwap = Math.max(1, Math.min(onBench.length, onField.length));
+            const numToSwap = Math.min(onBench.length >= 3 ? 2 : 1, onField.length, Math.max(1, onBench.length));
             const playersOut = onField.slice(0, numToSwap).map(p => p.name).join(', ');
             const playersIn = onBench.slice(0, numToSwap).map(p => p.name).join(', ');
 

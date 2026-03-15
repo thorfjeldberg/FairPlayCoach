@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useFairPlay } from './logic/useFairPlay';
 import { SetupView } from './components/SetupView';
 import { MatchView } from './components/MatchView';
 import { ReportView } from './components/ReportView';
+import { StartupScreen } from './components/StartupScreen';
 
 function App() {
   const {
@@ -20,8 +22,12 @@ function App() {
     suggestedInterval
   } = useFairPlay();
 
+  const [hasStarted, setHasStarted] = useState(false);
+
   let content;
-  if (state.match.status === 'IDLE') {
+  if (!hasStarted) {
+    content = <StartupScreen onStart={() => setHasStarted(true)} />;
+  } else if (state.match.status === 'IDLE') {
     content = (
       <SetupView
         players={state.players}
